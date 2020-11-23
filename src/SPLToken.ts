@@ -6,12 +6,35 @@ import { System } from './System';
 import { Account, PublicKey } from '.';
 import { BaseProgram } from './BaseProgram';
 
-import BufferLayout, { Layout } from 'buffer-layout';
+import BufferLayout from 'buffer-layout';
 
 import { uint64, u64LEBuffer, u64FromBuffer, publicKey } from './util/encoding';
 
-const MintLayout = Layout;
-const AccountLayout = Layout;
+export const MintLayout: typeof BufferLayout.Structure = BufferLayout.struct([
+  BufferLayout.u32('mintAuthorityOption'),
+  publicKey('mintAuthority'),
+  uint64('supply'),
+  BufferLayout.u8('decimals'),
+  BufferLayout.u8('isInitialized'),
+  BufferLayout.u32('freezeAuthorityOption'),
+  publicKey('freezeAuthority'),
+]);
+
+export const AccountLayout: typeof BufferLayout.Structure = BufferLayout.struct(
+  [
+    publicKey('mint'),
+    publicKey('owner'),
+    uint64('amount'),
+    BufferLayout.u32('delegateOption'),
+    publicKey('delegate'),
+    BufferLayout.u8('state'),
+    BufferLayout.u32('isNativeOption'),
+    uint64('isNative'),
+    uint64('delegatedAmount'),
+    BufferLayout.u32('closeAuthorityOption'),
+    publicKey('closeAuthority'),
+  ],
+);
 
 export interface InitMintParams {
   freezeAuthority?: PublicKey
@@ -59,6 +82,16 @@ export interface ApproveParams {
   multiSigners: Account[]
 }
 
+export interface Approve2Params {
+  token: PublicKey
+  account: PublicKey
+  delegate: PublicKey
+  amount: bigint
+  decimals: number
+  authority: Account | PublicKey
+  multiSigners: Account[]
+}
+
 export interface RevokeParams {
   account: PublicKey
   authority: Account | PublicKey
@@ -69,7 +102,7 @@ export interface BurnParams {
   token: PublicKey
   from: PublicKey
   amount: bigint
-  autority: Account | PublicKey
+  authority: Account | PublicKey
   multiSigners: Account[]
 }
 
@@ -77,7 +110,68 @@ export interface TransferParams {
   from: PublicKey
   to: PublicKey
   amount: bigint
-  autority: Account | PublicKey
+  authority: Account | PublicKey
+  multiSigners: Account[]
+}
+
+export interface Transfer2Params {
+  from: PublicKey
+  to: PublicKey
+  token: PublicKey
+  amount: bigint
+  decimals: number,
+  authority: Account | PublicKey
+  multiSigners: Account[]
+}
+
+type AuthorityType =
+  | 'MintTokens'
+  | 'FreezeAccount'
+  | 'AccountOwner'
+  | 'CloseAccount';
+
+const AuthorityTypeCodes = {
+  MintTokens: 0,
+  FreezeAccount: 1,
+  AccountOwner: 2,
+  CloseAccount: 3,
+};
+
+export interface SetAuthorityParams {
+  account: PublicKey
+  newAuthority: PublicKey | null,
+  authorityType: AuthorityType,
+  currentAuthority: Account | PublicKey
+  multiSigners: Account[]
+}
+
+export interface CloseAccountParams {
+  account: PublicKey
+  dest: PublicKey,
+  authority: Account | PublicKey
+  multiSigners: Account[]
+}
+
+export interface FreezeAccountParams {
+  token: PublicKey
+  account: PublicKey
+  authority: Account | PublicKey
+  multiSigners: Account[]
+}
+
+export interface ThawAccountParams {
+  token: PublicKey
+  account: PublicKey
+  authority: Account | PublicKey
+  multiSigners: Account[]
+}
+
+export interface MintTo2Params {
+  token: PublicKey
+  to: PublicKey
+  amount: bigint
+  decimals: number
+  authority: Account | PublicKey
   multiSigners: Account[]
 }
 
@@ -87,6 +181,9 @@ export interface MintToInstructionParams extends MintToParams {
 export interface ApproveInstructionParams extends ApproveParams {
 }
 
+export interface Approve2InstructionParams extends Approve2Params {
+}
+
 export interface RevokeInstructionParams extends RevokeParams {
 }
 
@@ -94,6 +191,24 @@ export interface BurnInstructionParams extends BurnParams {
 }
 
 export interface TransferInstructionParams extends TransferParams {
+}
+
+export interface Transfer2InstructionParams extends Transfer2Params {
+}
+
+export interface SetAuthorityInstructionParams extends SetAuthorityParams {
+}
+
+export interface CloseAccountInstructionParams extends CloseAccountParams {
+}
+
+export interface FreezeAccountInstructionParams extends FreezeAccountParams {
+}
+
+export interface ThawAccountInstructionParams extends ThawAccountParams {
+}
+
+export interface MintTo2InstructionParams extends MintTo2Params {
 }
 
 export type MintInfo = {
@@ -117,20 +232,60 @@ export type AccountInfo = {
   closeAuthority: null | PublicKey;
 };
 
-/**
- * Implemented 
- * 
- * `mintInfo`, `accountInfo`, `initializeMint(createMint)`, 
- * `initializeAccount(createAccount)`, `initializeWrappedNativeAccount`, `mintTo`,
- * `approve`, `revoke`, `burn`, `transfer`
- * 
- * TODO
- * 
- * `getMultisigInfo`, `setAuthority`, `closeAccount`, `freezeAccount`, `thawAccount`
- * `transfer2`, `approve2`, `revoke2`, `burn2`, `mintTo2`
- */
+const MultisigLayout = BufferLayout.struct([
+  BufferLayout.u8('m'),
+  BufferLayout.u8('n'),
+  BufferLayout.u8('is_initialized'),
+  publicKey('signer1'),
+  publicKey('signer2'),
+  publicKey('signer3'),
+  publicKey('signer4'),
+  publicKey('signer5'),
+  publicKey('signer6'),
+  publicKey('signer7'),
+  publicKey('signer8'),
+  publicKey('signer9'),
+  publicKey('signer10'),
+  publicKey('signer11'),
+]);
 
- // The address of the special mint for wrapped native token.
+/**
+ * Information about an multisig
+ */
+type MultisigInfo = {
+  /**
+   * The number of signers required
+   */
+  m: number,
+
+  /**
+   * Number of possible signers, corresponds to the
+   * number of `signers` that are valid.
+   */
+  n: number,
+
+  /**
+   * Is this mint initialized
+   */
+  initialized: boolean,
+
+  /**
+   * The signers
+   */
+  signer1: PublicKey,
+  signer2: PublicKey,
+  signer3: PublicKey,
+  signer4: PublicKey,
+  signer5: PublicKey,
+  signer6: PublicKey,
+  signer7: PublicKey,
+  signer8: PublicKey,
+  signer9: PublicKey,
+  signer10: PublicKey,
+  signer11: PublicKey,
+};
+
+// The address of the special mint for wrapped native token.
 export const NATIVE_MINT: PublicKey = new PublicKey(
   'So11111111111111111111111111111111111111112',
 );
@@ -230,6 +385,40 @@ export class SPLToken extends BaseProgram {
     }
 
     return accountInfo;
+  }
+
+  /**
+   * Retrieve Multisig information
+   *
+   * @param multisig Public key of the account
+   */
+  async multisigInfo(multisig: PublicKey): Promise<MultisigInfo> {
+    const info = await this.conn.getAccountInfo(multisig);
+    if (info === null) {
+      throw new Error('Failed to find multisig');
+    }
+    if (!info.owner.equals(this.programID)) {
+      throw new Error(`Invalid multisig owner`);
+    }
+    if (info.data.length != MultisigLayout.span) {
+      throw new Error(`Invalid multisig size`);
+    }
+
+    const data = Buffer.from(info.data);
+    const multisigInfo = MultisigLayout.decode(data);
+    multisigInfo.signer1 = new PublicKey(multisigInfo.signer1);
+    multisigInfo.signer2 = new PublicKey(multisigInfo.signer2);
+    multisigInfo.signer3 = new PublicKey(multisigInfo.signer3);
+    multisigInfo.signer4 = new PublicKey(multisigInfo.signer4);
+    multisigInfo.signer5 = new PublicKey(multisigInfo.signer5);
+    multisigInfo.signer6 = new PublicKey(multisigInfo.signer6);
+    multisigInfo.signer7 = new PublicKey(multisigInfo.signer7);
+    multisigInfo.signer8 = new PublicKey(multisigInfo.signer8);
+    multisigInfo.signer9 = new PublicKey(multisigInfo.signer9);
+    multisigInfo.signer10 = new PublicKey(multisigInfo.signer10);
+    multisigInfo.signer11 = new PublicKey(multisigInfo.signer11);
+
+    return multisigInfo;
   }
 
   /**
@@ -358,8 +547,8 @@ export class SPLToken extends BaseProgram {
   /**
    * Mint new tokens
    *
-   * @param amount Amount to mint
    * @param token To mint token
+   * @param amount Amount to mint
    * @param to Public key of the account to mint to
    * @param authority Minting authority
    * @param multiSigners Signing accounts if `authority` is a multiSig
@@ -374,8 +563,8 @@ export class SPLToken extends BaseProgram {
 
   private mintToInstruction(params: MintToInstructionParams): TransactionInstruction {
     const {
-      amount,
       token,
+      amount,
       to,
       authority,
       multiSigners,
@@ -478,9 +667,9 @@ export class SPLToken extends BaseProgram {
    * @param multiSigners Signing accounts if `owner` is a multiSig
    */
   public async burn(params: BurnParams): Promise<void> {
-    const { autority, multiSigners } = params;
+    const { authority, multiSigners } = params;
 
-    const signers = autority.constructor == Account ? [autority] : multiSigners
+    const signers = authority.constructor == Account ? [authority] : multiSigners
 
     await this.sendTx([this.burnInstruction(params)], [this.account, ...signers]);
   }
@@ -490,7 +679,7 @@ export class SPLToken extends BaseProgram {
       token,
       from,
       amount,
-      autority,
+      authority,
       multiSigners,
     } = params;
 
@@ -505,7 +694,7 @@ export class SPLToken extends BaseProgram {
     }, [
       { write: from },
       { write: token },
-      autority,
+      authority,
       multiSigners
     ]);
 
@@ -517,13 +706,13 @@ export class SPLToken extends BaseProgram {
    * @param from Source account
    * @param to Destination account
    * @param amount Number of tokens to transfer
-   * @param autority Owner of the source account
+   * @param authority Owner of the source account
    * @param multiSigners Signing accounts if `owner` is a multiSig
    */
   public async transfer(params: TransferParams): Promise<void> {
-    const { autority, multiSigners } = params;
+    const { authority, multiSigners } = params;
 
-    const signers = autority.constructor == Account ? [autority] : multiSigners
+    const signers = authority.constructor == Account ? [authority] : multiSigners
 
     await this.sendTx([this.transferInstruction(params)], [this.account, ...signers]);
   }
@@ -533,7 +722,7 @@ export class SPLToken extends BaseProgram {
       from,
       to,
       amount,
-      autority,
+      authority,
       multiSigners,
     } = params;
     
@@ -548,10 +737,318 @@ export class SPLToken extends BaseProgram {
     }, [
       { write: from },
       { write: to },
-      autority,
+      authority,
       multiSigners
     ]);
 
   }
+
+  /**
+   * Assign a new authority to the account
+   *
+   * @param account Public key of the account
+   * @param newAuthority New authority of the account
+   * @param authorityType Type of authority to set
+   * @param currentAuthority Current authority of the account
+   * @param multiSigners Signing accounts if `currentAuthority` is a multiSig
+   */
+  public async setAuthority(params: SetAuthorityParams): Promise<void> {
+    const { currentAuthority, multiSigners } = params;
+
+    const signers = currentAuthority.constructor == Account ? [currentAuthority] : multiSigners;
+
+    await this.sendTx([this.setAuthorityInstruction(params)], [this.account, ...signers]);
+  }
+
+  private setAuthorityInstruction(params: SetAuthorityInstructionParams): TransactionInstruction{
+    const {
+      account,
+      newAuthority,
+      authorityType,
+      currentAuthority,
+      multiSigners,
+    } = params;
+    
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+      BufferLayout.u8('authorityType'),
+      BufferLayout.u8('option'),
+      publicKey('newAuthority'),
+    ]);
+
+    return this.instructionEncode(layout, {
+      instruction: 6, // SetAuthority instruction
+      authorityType: AuthorityTypeCodes[authorityType],
+      option: newAuthority === null ? 0 : 1,
+      newAuthority: (newAuthority || new PublicKey('')).toBuffer(),
+    }, [
+      { write: account },
+      currentAuthority,
+      multiSigners
+    ]);
+
+  }
+
+  /**
+   * Close account
+   *
+   * @param account Account to close
+   * @param dest Account to receive the remaining balance of the closed account
+   * @param authority Authority which is allowed to close the account
+   * @param multiSigners Signing accounts if `authority` is a multiSig
+   */
+  public async closeAccount(params: CloseAccountParams): Promise<void> {
+    const { authority, multiSigners } = params;
+
+    const signers = authority.constructor == Account ? [authority] : multiSigners;
+
+    await this.sendTx([this.closeAccountInstruction(params)], [this.account, ...signers]);
+  }
+
+  private closeAccountInstruction(params: CloseAccountInstructionParams): TransactionInstruction{
+    const {
+      account,
+      dest,
+      authority,
+      multiSigners,
+    } = params;
+    
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+    ]);
+
+    return this.instructionEncode(layout, {
+      instruction: 9, // CloseAccount instruction
+    }, [
+      { write: account },
+      { write: dest },
+      authority,
+      multiSigners
+    ]);
+
+  }
+
+  /**
+   * Freeze account
+   * 
+   * @param token The token public key
+   * @param account Account to freeze
+   * @param authority The mint freeze authority
+   * @param multiSigners Signing accounts if `authority` is a multiSig
+   */
+  public async freezeAccount(params: FreezeAccountParams): Promise<void> {
+    const { authority, multiSigners } = params;
+
+    const signers = authority.constructor == Account ? [authority] : multiSigners;
+
+    await this.sendTx([this.freezeAccountInstruction(params)], [this.account, ...signers]);
+  }
+
+  private freezeAccountInstruction(params: FreezeAccountInstructionParams): TransactionInstruction{
+    const {
+      token,
+      account,
+      authority,
+      multiSigners,
+    } = params;
+    
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+    ]);
+
+    return this.instructionEncode(layout, {
+      instruction: 10, // CloseAccount instruction
+    }, [
+      { write: account },
+      token,
+      authority,
+      multiSigners
+    ]);
+  }
+
+  /**
+   * Thaw account
+   *
+   * @param account Account to thaw
+   * @param authority The mint freeze authority
+   * @param multiSigners Signing accounts if `authority` is a multiSig
+   */
+  public async thawAccount(params: ThawAccountParams): Promise<void> {
+    const { authority, multiSigners } = params;
+
+    const signers = authority.constructor == Account ? [authority] : multiSigners;
+
+    await this.sendTx([this.thawAccountInstruction(params)], [this.account, ...signers]);
+  }
+
+  private thawAccountInstruction(params: ThawAccountInstructionParams): TransactionInstruction{
+    const {
+      token,
+      account,
+      authority,
+      multiSigners,
+    } = params;
+    
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+    ]);
+
+    return this.instructionEncode(layout, {
+      instruction: 11, // ThawAccount instruction
+    }, [
+      { write: account },
+      token,
+      authority,
+      multiSigners
+    ]);
+  }
+
+  /**
+   * Transfer tokens to another account
+   *
+   * @param from Source account
+   * @param to Destination account
+   * @param token The token public key
+   * @param amount Number of tokens to transfer
+   * @param decimals Number of decimals in transfer amount
+   * @param authority Owner of the source account
+   * @param multiSigners Signing accounts if `owner` is a multiSig
+   */
+  public async transfer2(params: Transfer2Params): Promise<void> {
+    const { authority, multiSigners } = params;
+
+    const signers = authority.constructor == Account ? [authority] : multiSigners
+
+    await this.sendTx([this.transfer2Instruction(params)], [this.account, ...signers]);
+  }
+
+  private transfer2Instruction(params: Transfer2InstructionParams): TransactionInstruction{
+    const {
+      from,
+      to,
+      token,
+      amount,
+      decimals,
+      authority,
+      multiSigners,
+    } = params;
+    
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+      uint64('amount'),
+      BufferLayout.u8('decimals'),
+    ]);
+
+    return this.instructionEncode(layout, {
+      instruction: 12, // Transfer2 instruction
+      amount: u64LEBuffer(amount),
+      decimals,
+    }, [
+      { write: from },
+      token,
+      { write: to },
+      authority,
+      multiSigners
+    ]);
+
+  }
+  
+  /**
+   * Construct an Approve instruction
+   * 
+   * @param token The token public key
+   * @param amount Maximum number of tokens the delegate may transfer
+   * @param account Public key of the account
+   * @param decimals Number of decimals in approve amount
+   * @param delegate Account authorized to perform a transfer of tokens from the source account
+   * @param authority Owner of the source account
+   * @param multiSigners Signing accounts if `owner` is a multiSig
+   */
+  public async approve2(params: Approve2Params): Promise<void> {
+    const { authority, multiSigners } = params;
+    
+    const signers = authority.constructor == Account ? [authority] : multiSigners
+
+    await this.sendTx([this.approve2Instruction(params)], [this.account, ...signers]);
+  }
+
+  private approve2Instruction(params: Approve2InstructionParams): TransactionInstruction {
+    const {
+      token,
+      amount,
+      account,
+      decimals,
+      delegate,
+      authority,
+      multiSigners,
+    } = params;
+
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+      uint64('amount'),
+      BufferLayout.u8('decimals'),
+    ]);
+    
+    return this.instructionEncode(layout, {
+      instruction: 13, // Approve instruction
+      amount: u64LEBuffer(amount),
+      decimals,
+    }, [
+      { write: account },
+      token,
+      delegate,
+      authority,
+      multiSigners
+    ]);
+
+  }
+
+  /**
+   * Mint new tokens
+   *
+   * @param token To mint token
+   * @param amount Amount to mint
+   * @param decimals Number of decimals in amount to mint
+   * @param to Public key of the account to mint to
+   * @param authority Minting authority
+   * @param multiSigners Signing accounts if `authority` is a multiSig
+   */
+  public async mintTo2(params: MintTo2Params): Promise<void> {
+    const { authority, multiSigners } = params;
+    
+    const signers = authority.constructor == Account ? [authority] : multiSigners
+
+    await this.sendTx([this.mintTo2Instruction(params)], [this.account, ...signers])
+  }
+
+  private mintTo2Instruction(params: MintTo2InstructionParams): TransactionInstruction {
+    const {
+      token,
+      amount,
+      decimals,
+      to,
+      authority,
+      multiSigners,
+    } = params
+
+    const layout = BufferLayout.struct([
+      BufferLayout.u8('instruction'),
+      uint64('amount'),
+      BufferLayout.u8('decimals'),
+    ])
+
+    return this.instructionEncode(layout, {
+      instruction: 14, // MintTo2 instruction
+      amount: u64LEBuffer(amount),
+      decimals,
+    }, [
+      { write: token },
+      { write: to },
+      authority,
+      multiSigners
+    ]);
+
+  }
+
 
 }

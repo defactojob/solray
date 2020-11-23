@@ -129,3 +129,15 @@ export class Faucet extends BaseProgram {
   }
 }
 ```
+
+## Build
+
+If you installed Solray globally, you can build program by running:
+
+```bash
+$ solary build <program> [path]
+```
+
+The script will auto download or update build sdk. 
+
+*SDK version is based on your `testnetDefaultChannel` in  package.json*
