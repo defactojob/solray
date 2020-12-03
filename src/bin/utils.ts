@@ -46,7 +46,7 @@ function getSoFilePath(program: string, profilePath: string): string {
 
 // Build the solana program.
 async function runBuild(program: string, toPath: string): Promise<void> {
-
+  program = program.replace(/\/$/, '');
   const programDir = path.join(cwd, program);
   const targetDir = path.join(programDir, 'target');
   const profilePath = path.join(targetDir, 'bpfel-unknown-unknown', 'release');
@@ -59,7 +59,7 @@ async function runBuild(program: string, toPath: string): Promise<void> {
 
   const soFilePath = getSoFilePath(program, profilePath);
 
-  const soFileName = program + '.so';
+  const soFileName = path.basename(soFilePath);
   let outputDir = 'build';
 
   if (toPath) {

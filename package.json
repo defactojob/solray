@@ -10,8 +10,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "clean": "rm -r lib",
-    "prepack": "npm run clean && npm run build && cp ./src/bin/*.sh ./lib/bin/"
+    "clean": "rm -rf lib",
+    "prepack": "npm run clean && npm run build"
   },
   "dependencies": {
     "@solana/web3.js": "^0.86.4",

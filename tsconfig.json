@@ -70,6 +70,7 @@
   },
   "include": [
     "./src/*",
-    "./src/bin/*"
+    "./src/bin/*",
+    "./src/util/*"
   ]
 }
