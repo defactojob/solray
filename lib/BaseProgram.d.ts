@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { PublicKey, TransactionInstruction, Account, Connection } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction, Account, Connection, Commitment } from "@solana/web3.js";
 import { Wallet } from '.';
 import BufferLayout from 'buffer-layout';
 export declare abstract class BaseProgram {
@@ -9,7 +9,7 @@ export declare abstract class BaseProgram {
     protected get conn(): Connection;
     protected get account(): Account;
     protected get pubkey(): PublicKey;
-    protected sendTx(insts: TransactionInstruction[], signers?: Account[]): Promise<string>;
+    protected sendTx(insts: TransactionInstruction[], signers?: Account[], commitment?: Commitment, timeout?: number): Promise<string>;
     protected instructionEncode(layout: BufferLayout, data: any, authorities?: InstructionAuthority[]): TransactionInstruction;
     protected instruction(data: Buffer, authorities?: InstructionAuthority[]): TransactionInstruction;
 }
