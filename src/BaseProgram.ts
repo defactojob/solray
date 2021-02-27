@@ -202,7 +202,7 @@ async function awaitTransactionSignatureConfirmation(
               resolve(result);
             }
           },
-          'recent',
+          'singleGossip',
         );
         // console.log('Set up WS connection', txid);
       } catch (e) {
