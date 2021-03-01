@@ -65,7 +65,7 @@ export abstract class BaseProgram {
     console.log('Started awaiting confirmation for', txid);
     let done = false;
     (async () => {
-      while (!done && getUnixTs() - startTime < timeout) {
+      while (!done && getUnixTs() - startTime < timeout / 1000) {
         this.conn.sendRawTransaction(rawTx, {
           skipPreflight: true
         });
