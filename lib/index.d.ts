@@ -7,11 +7,10 @@ export { BaseProgram } from "./BaseProgram";
 export { BPFLoader } from "./BPFLoader";
 export { System } from "./System";
 export { Deployer } from "./Deployer";
-export declare type NetworkName = "local" | "dev" | "main";
 export interface IConnectOptions {
     commitment?: string;
     rpcHost?: string;
 }
 export declare namespace solana {
-    function connect(networkName: NetworkName, opts?: IConnectOptions): Connection;
+    function connect(networkName: string, opts?: IConnectOptions): Connection;
 }
